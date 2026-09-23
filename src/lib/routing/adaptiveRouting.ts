@@ -2,6 +2,7 @@ import type { ProviderFailure } from "@/lib/resilience/failureClassification";
 import type { ProviderQuotaStatus } from "@/lib/quota/providerQuotaTelemetry";
 import {
   evaluateSovereignRoute,
+  inferLocalSovereignPosture,
   type SovereignProviderPosture,
   type SovereignRouteRequirements,
 } from "@/lib/routing/sovereignRouting";
@@ -68,7 +69,9 @@ function latencyFactor(latencyMs?: number): number {
 export function scoreCandidate(candidate: RoutingCandidate): RoutingExplanation {
   const sovereign = candidate.sovereignRequirements
     ? evaluateSovereignRoute(
-        candidate.sovereignPosture ?? { providerId: candidate.providerId },
+        candidate.sovereignPosture ??
+          inferLocalSovereignPosture(candidate.providerId) ??
+          { providerId: candidate.providerId },
         candidate.sovereignRequirements
       )
     : null;
