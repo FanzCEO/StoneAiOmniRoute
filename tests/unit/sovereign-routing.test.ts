@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canFallbackAcrossProviders,
   evaluateSovereignRoute,
+  inferLocalSovereignPosture,
 } from "@/lib/routing/sovereignRouting";
 import { scoreCandidate } from "@/lib/routing/adaptiveRouting";
 
@@ -68,5 +69,22 @@ describe("sovereign routing", () => {
     expect(result.eligible).toBe(false);
     expect(result.score).toBe(0);
     expect(result.reasons).toContain("route-transparency-not-proven");
+  });
+});
+
+
+describe("local sovereign runtimes", () => {
+  it("recognizes supported tenant-controlled inference runtimes", () => {
+    for (const providerId of ["ollama-local", "llama-cpp", "vllm", "docker-model-runner"]) {
+      const posture = inferLocalSovereignPosture(providerId);
+      expect(posture?.selfHosted).toBe(true);
+      expect(posture?.routeTransparency).toBe("direct");
+      expect(posture?.trainingUse).toBe("prohibited");
+    }
+  });
+
+  it("does not silently trust remote providers", () => {
+    expect(inferLocalSovereignPosture("openai")).toBeNull();
+    expect(inferLocalSovereignPosture("xiaomi-mimo")).toBeNull();
   });
 });
