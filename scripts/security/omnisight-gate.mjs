@@ -32,6 +32,18 @@ if(format==="sarif"){
       title:result?.message?.text??String(ruleId),location:{path:loc?.artifactLocation?.uri,line:loc?.region?.startLine},
       fingerprint:result?.partialFingerprints?.primaryLocationLineHash,evidence:{ruleId}});
   }
+} else if(format==="osv"){
+  for(const result of Array.isArray(payload?.results)?payload.results:[]) for(const pkg of Array.isArray(result?.packages)?result.packages:[]){
+    const name=pkg?.package?.name, version=pkg?.package?.version;
+    for(const vuln of Array.isArray(pkg?.vulnerabilities)?pkg.vulnerabilities:[]){
+      const severity=sev(vuln?.database_specific?.severity);
+      const fixed=Array.isArray(vuln?.affected)?vuln.affected.flatMap(a=>a?.ranges??[]).flatMap(r=>r?.events??[]).find(e=>e?.fixed)?.fixed:undefined;
+      findings.push({id:["osv",vuln?.id??"unknown",name??"unknown",version??"unknown"].join(":"),
+        source:"osv",category:"dependency",severity,title:vuln?.summary??vuln?.id??"Dependency vulnerability",
+        cve:[vuln?.id,...(vuln?.aliases??[])].filter(x=>/^CVE-/i.test(String(x))),
+        location:{package:name,version},fixAvailable:Boolean(fixed),fixVersion:fixed,evidence:{aliases:vuln?.aliases??[]}});
+    }
+  }
 } else if(format==="gitleaks" && Array.isArray(payload)){
   for(const e of payload) findings.push({id:["gitleaks",e.RuleID??"unknown",e.File??"unknown",e.StartLine??0].join(":").toLowerCase(),
     source:"gitleaks",category:"secret",severity:"critical",title:e.Description??e.RuleID??"Secret detected",
@@ -39,7 +51,8 @@ if(format==="sarif"){
 } else { console.error("[omnisight] unsupported format:",format); process.exit(2); }
 
 for(const f of findings) severities[f.severity]++;
-const blocking=findings.filter(f=>f.category==="secret"||f.severity==="critical");
+const blockFixableHigh=process.argv.includes("--block-fixable-high");
+const blocking=findings.filter(f=>f.category==="secret"||f.severity==="critical"||(blockFixableHigh&&f.severity==="high"&&f.fixAvailable===true));
 const report={schema:"stone.omnisight.security/v1",source,commitSha,allowed:blocking.length===0,
   summary:severities,blockingCount:blocking.length,advisoryCount:findings.length-blocking.length,findings};
 fs.mkdirSync(path.dirname(output),{recursive:true});
