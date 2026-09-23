@@ -128,3 +128,39 @@ export function canFallbackAcrossProviders(
 ): boolean {
   return requirements.allowCrossProviderFallback !== false;
 }
+
+
+/**
+ * Trusted defaults for runtimes that execute entirely inside the tenant-controlled
+ * boundary. Remote/cloud providers intentionally receive no implicit trust here:
+ * their posture must be supplied from verified provider metadata.
+ */
+export const LOCAL_SOVEREIGN_PROVIDER_IDS = new Set([
+  "mlx-gemma",
+  "mlx-qwen",
+  "ollama-local",
+  "lm-studio",
+  "vllm",
+  "lemonade",
+  "llamafile",
+  "llama-cpp",
+  "triton",
+  "docker-model-runner",
+  "xinference",
+  "oobabooga",
+]);
+
+export function inferLocalSovereignPosture(
+  providerId: string
+): SovereignProviderPosture | null {
+  if (!LOCAL_SOVEREIGN_PROVIDER_IDS.has(providerId)) return null;
+  return {
+    providerId,
+    jurisdictions: ["tenant-controlled"],
+    retention: "zero",
+    trainingUse: "prohibited",
+    routeTransparency: "direct",
+    selfHosted: true,
+    directProvider: true,
+  };
+}
