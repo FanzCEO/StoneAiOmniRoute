@@ -1,5 +1,10 @@
 import type { ProviderFailure } from "@/lib/resilience/failureClassification";
 import type { ProviderQuotaStatus } from "@/lib/quota/providerQuotaTelemetry";
+import {
+  evaluateSovereignRoute,
+  type SovereignProviderPosture,
+  type SovereignRouteRequirements,
+} from "@/lib/routing/sovereignRouting";
 
 export type AllocationDecision = "allow" | "warn" | "deny";
 export type CircuitState = "closed" | "open" | "half_open";
@@ -16,6 +21,8 @@ export interface RoutingCandidate {
   errorRate?: number;
   modelPreference?: number;
   costPreference?: number;
+  sovereignPosture?: SovereignProviderPosture;
+  sovereignRequirements?: SovereignRouteRequirements;
 }
 
 export interface RoutingExplanation {
@@ -59,6 +66,27 @@ function latencyFactor(latencyMs?: number): number {
 }
 
 export function scoreCandidate(candidate: RoutingCandidate): RoutingExplanation {
+  const sovereign = candidate.sovereignRequirements
+    ? evaluateSovereignRoute(
+        candidate.sovereignPosture ?? { providerId: candidate.providerId },
+        candidate.sovereignRequirements
+      )
+    : null;
+
+  if (sovereign && !sovereign.allowed) {
+    return {
+      providerId: candidate.providerId,
+      modelId: candidate.modelId,
+      score: 0,
+      eligible: false,
+      reasons: sovereign.reasons,
+      factors: {
+        sovereignty: 0,
+        policy: "sovereign-routing-v1",
+      },
+    };
+  }
+
   const capability = clamp(candidate.capabilityScore);
   const allocation =
     candidate.allocation === "deny" ? 0 : candidate.allocation === "warn" ? 0.85 : 1;
