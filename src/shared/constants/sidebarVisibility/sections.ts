@@ -519,6 +519,15 @@ const AUDIT_GROUP: SidebarItemGroup = {
   titleFallback: "Audit",
   items: [
     {
+      id: "omnisight-security",
+      href: "/dashboard/security/omnisight",
+      i18nKey: "omnisightSecurity",
+      labelFallback: "OmniSight Security",
+      subtitleKey: "omnisightSecuritySubtitle",
+      subtitleFallback: "Code-to-cloud evidence",
+      icon: "shield_lock",
+    },
+    {
       id: "audit",
       href: "/dashboard/audit",
       i18nKey: "auditLog",
