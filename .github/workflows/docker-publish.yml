@@ -532,6 +532,18 @@ jobs:
           # gate must honour the same accepted-risk list (#12084).
           trivyignores: .trivyignore
 
+      - name: OmniSight container-image gate
+        if: needs.prepare.outputs.version != 'main'
+        run: node scripts/security/omnisight-gate.mjs --format sarif --input trivy-results.sarif --source trivy-image --commit "$GITHUB_SHA" --output omnisight-trivy.json
+      - name: Upload OmniSight container evidence
+        if: always() && needs.prepare.outputs.version != 'main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: omnisight-trivy-evidence
+          path: omnisight-trivy.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload Trivy SARIF to Security tab
         if: needs.prepare.outputs.version != 'main'
         continue-on-error: true
