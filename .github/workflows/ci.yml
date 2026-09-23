@@ -391,6 +391,13 @@ jobs:
       # is absent (a missing binary never blocks).
       - name: Secret scan (gitleaks, ratchet, blocking)
         run: npm run check:secrets -- --ratchet
+      - name: Export Gitleaks findings for OmniSight
+        if: always()
+        continue-on-error: true
+        run: npm run check:secrets -- --json > .artifacts/gitleaks.json
+      - name: OmniSight secret gate
+        if: always()
+        run: node scripts/security/omnisight-gate.mjs --format gitleaks --input .artifacts/gitleaks.json --source gitleaks --commit "$GITHUB_SHA" --output .artifacts/omnisight-gitleaks.json
       # BLOCKING ratchet (v3.8.27 cycle-end): vulnCount must not regress vs the
       # baseline. --ratchet exits 1 on a measured regression (measured > baseline);
       # it SKIPs (exit 0) when osv-scanner is absent or osv.dev is unreachable (a
@@ -399,6 +406,23 @@ jobs:
       # red this gate; the fix is to bump the dep or re-baseline metrics.vulnCount.
       - name: Vulnerability ratchet (osv-scanner, ratchet, blocking)
         run: npm run check:vuln-ratchet -- --ratchet
+      - name: Export OSV findings for OmniSight
+        if: always()
+        continue-on-error: true
+        run: npm run check:vuln-ratchet -- --json > .artifacts/osv.json
+      - name: OmniSight dependency gate
+        if: always()
+        run: node scripts/security/omnisight-gate.mjs --format osv --input .artifacts/osv.json --source osv --commit "$GITHUB_SHA" --output .artifacts/omnisight-osv.json --block-fixable-high
+      - name: Upload OmniSight security evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: omnisight-security-evidence
+          path: |
+            .artifacts/omnisight-gitleaks.json
+            .artifacts/omnisight-osv.json
+          if-no-files-found: warn
+          retention-days: 14
       # BLOCKING ratchet (Etapa 2): zizmorFindings must not regress vs the baseline.
       # ONLY zizmor is ratcheted — actionlint findings are reported, not blocking.
       # --ratchet exits 1 on a measured zizmor regression; it SKIPs (exit 0) when
