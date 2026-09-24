@@ -25,3 +25,51 @@ export function findSbomComponents(query:string,limit=100){
     WHERE name LIKE ? OR version LIKE ? OR purl LIKE ? OR cpe LIKE ?
     ORDER BY created_at DESC LIMIT ?`).all(q,q,q,q,n);
 }
+
+
+export function getComponentBlastRadius(query:string,limit=100){
+  const q=`%${query}%`, n=Math.max(1,Math.min(500,Math.trunc(limit)));
+  const db=getDbInstance();
+  const components=db.prepare(`SELECT * FROM omnisight_sbom_components
+    WHERE name LIKE ? OR version LIKE ? OR purl LIKE ? OR cpe LIKE ?
+    ORDER BY created_at DESC LIMIT ?`).all(q,q,q,q,n) as any[];
+
+  const results=components.map((component)=>{
+    const workloads=db.prepare(`SELECT DISTINCT w.*
+      FROM omnisight_runtime_workloads w
+      WHERE (component.image_digest IS NOT NULL AND component.image_digest = w.image_digest)
+         OR (component.artifact_ref IS NOT NULL AND component.artifact_ref = w.artifact_ref)
+      ORDER BY w.last_seen_at DESC`).all({component}) as any[];
+
+    const scans=db.prepare(`SELECT DISTINCT s.*
+      FROM omnisight_security_scans s
+      WHERE (component.scan_id IS NOT NULL AND component.scan_id = s.id)
+         OR (component.image_digest IS NOT NULL AND component.image_digest = s.image_digest)
+         OR (component.artifact_ref IS NOT NULL AND component.artifact_ref = s.artifact_ref)
+      ORDER BY s.created_at DESC`).all({component}) as any[];
+
+    const findings=scans.flatMap((scan:any)=>
+      db.prepare(`SELECT * FROM omnisight_security_findings
+        WHERE scan_id = ? AND (
+          location_json LIKE ? OR title LIKE ? OR description LIKE ?
+        )
+        ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`)
+        .all(scan.id,`%${component.name}%`,`%${component.name}%`,`%${component.name}%`) as any[]
+    );
+
+    return {
+      component,
+      workloads,
+      scans,
+      findings,
+      exposure:{
+        workloadCount:workloads.length,
+        internetExposed:workloads.filter((w:any)=>w.internet_exposed===1||w.internet_exposed===true).length,
+        privileged:workloads.filter((w:any)=>w.privileged===1||w.privileged===true).length,
+        blockingFindings:findings.filter((x:any)=>x.disposition==="blocking").length,
+      },
+    };
+  });
+
+  return results;
+}
