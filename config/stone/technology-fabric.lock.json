@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-24T06:10:00Z",
+  "authority": "stone",
+  "components": {
+    "yao": {
+      "repository": "YaoApp/yao",
+      "ref": "v1.0.0-rc23",
+      "commit": "a289dd55abe357941506e2114fb8c5ec21b99149",
+      "commitVerified": true,
+      "license": "modified-Apache-2.0-commercial-conditions",
+      "productionPolicy": "license-hold",
+      "notes": "Do not activate commercially until the Yao commercial-use terms are reviewed and satisfied."
+    },
+    "codebase-memory": {
+      "repository": "DeusData/codebase-memory-mcp",
+      "ref": "v0.11.0",
+      "commit": "8972ea69c6ad94b1ef1d4ffbf0a92d78d2db1798",
+      "commitVerified": true,
+      "license": "MIT",
+      "productionPolicy": "approved-optional"
+    },
+    "mvt": {
+      "repository": "mvt-project/mvt",
+      "ref": "v2026.9.21",
+      "commit": "e0697a58e977dc7035efe37363ea784ed8c6bc88",
+      "commitVerified": true,
+      "license": "MVT-License-1.1",
+      "productionPolicy": "consent-gated-sandbox"
+    },
+    "financial-services": {
+      "repository": "anthropics/financial-services",
+      "ref": "574ed3624aebd0418c7e96cd101262f30210ab26",
+      "commit": "574ed3624aebd0418c7e96cd101262f30210ab26",
+      "commitVerified": true,
+      "license": "Apache-2.0",
+      "productionPolicy": "approved-analysis-only",
+      "notes": "Partner data connectors still require their own entitlements and credentials."
+    },
+    "impeccable": {
+      "repository": "pbakaus/impeccable",
+      "ref": "skill-v4.3.1",
+      "commit": "cd12f8660e2dde57b9615c8a6b8ea674101f9cfc",
+      "commitVerified": false,
+      "license": "Apache-2.0",
+      "productionPolicy": "ci-approved-with-checksum",
+      "notes": "Release commit is unsigned; require release-asset checksum verification before installation."
+    },
+    "agent-substrate": {
+      "repository": "agent-substrate/substrate",
+      "ref": "v0.1.0",
+      "commit": "fa6d949685a6318940a9a0195c867c864009b820",
+      "commitVerified": true,
+      "license": "Apache-2.0",
+      "productionPolicy": "experimental-shadow-only"
+    }
+  }
+}

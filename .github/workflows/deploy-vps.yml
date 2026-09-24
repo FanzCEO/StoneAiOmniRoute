@@ -5,6 +5,11 @@ on:
     workflows: ["Publish to Docker Hub"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Exact StoneAiOmniRoute commit SHA to deploy"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -55,44 +60,16 @@ jobs:
           script: |
             set -euo pipefail
 
-            echo "=== Updating OmniRoute ==="
-            npm install -g omniroute@latest
-            INSTALLED_VERSION=$(omniroute --version 2>/dev/null | tr -d '[:space:]' || echo "unknown")
-            echo "Installed CLI version: $INSTALLED_VERSION"
+            echo "=== Deploying exact Stone fork revision ==="
+            export STONE_OMNIROUTE_REPO_URL="https://github.com/FanzCEO/StoneAiOmniRoute.git"
+            export STONE_OMNIROUTE_SHA="${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.event.workflow_run.head_sha }}"
+            export STONE_OMNIROUTE_REF="release/v3.8.51"
 
-            # Recreate the PM2 process instead of `pm2 restart`. A bare restart
-            # re-runs whatever script path was saved earlier; after the build-output
-            # reorg (app/ -> dist/, .next -> .build/next) a process pinned to the old
-            # app/server-ws.mjs path can no longer start, and the node process dies
-            # while PM2 still reports "online" — so the box never binds :20128.
-            # Always launch via the `omniroute` bin so .env is loaded and the dist/
-            # layout is resolved correctly.
-            echo "=== (Re)creating PM2 process via bin ==="
-            pm2 delete omniroute 2>/dev/null || true
-            pm2 start omniroute --name omniroute -- --port 20128
-            pm2 save
-
-            # Health gate: fail the deploy unless the box actually reports healthy.
-            # Poll /api/monitoring/health for "status":"healthy" (a deeper signal than
-            # a static page 200 — it confirms the app booted, not just that a port is
-            # bound). Boot can take a while after a native-module/build-layout change,
-            # so poll up to ~3min before giving up.
-            echo "=== Health Check (gates the deploy) ==="
-            ok=0
-            for i in $(seq 1 36); do
-              BODY=$(curl -sf -m 5 http://localhost:20128/api/monitoring/health 2>/dev/null || true)
-              if printf '%s' "$BODY" | grep -q '"status":"healthy"'; then
-                ok=1
-                echo "✅ /api/monitoring/health -> healthy (attempt $i) — version $INSTALLED_VERSION"
-                break
-              fi
-              echo "… not healthy yet (attempt $i/36), retrying in 5s"
-              sleep 5
-            done
-            if [ "$ok" != "1" ]; then
-              echo "❌ Health check failed — /api/monitoring/health never reported healthy after ~3min"
-              echo "--- recent PM2 logs ---"
-              pm2 logs omniroute --lines 40 --nostream || true
-              exit 1
-            fi
-            echo "=== Deploy complete ==="
+            BOOTSTRAP_DIR=$(mktemp -d)
+            trap 'rm -rf "$BOOTSTRAP_DIR"' EXIT
+            git clone --filter=blob:none --no-checkout "$STONE_OMNIROUTE_REPO_URL" "$BOOTSTRAP_DIR/repo"
+            git -C "$BOOTSTRAP_DIR/repo" fetch --depth 1 origin "$STONE_OMNIROUTE_SHA"
+            git -C "$BOOTSTRAP_DIR/repo" checkout -q --detach FETCH_HEAD
+            test "$(git -C "$BOOTSTRAP_DIR/repo" rev-parse HEAD)" = "$STONE_OMNIROUTE_SHA"
+            bash "$BOOTSTRAP_DIR/repo/scripts/ops/deploy-stone-fork.sh"
+            echo "=== Deploy complete: $STONE_OMNIROUTE_SHA ==="
