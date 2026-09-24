@@ -25,6 +25,9 @@ export type StoneTechnology = {
   dataBoundary: string;
   purpose: string;
   defaultEnabled: boolean;
+  pinnedRef: string;
+  pinnedCommit: string;
+  productionPolicy: string;
 };
 
 export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
@@ -40,6 +43,9 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
     dataBoundary: "Typed decisions and application-runtime execution only; no Stone authority.",
     purpose: "Structured Choice/Score/Noul decisions, agent runtime, MCP and application services.",
     defaultEnabled: false,
+    pinnedRef: "v1.0.0-rc23",
+    pinnedCommit: "a289dd55abe357941506e2114fb8c5ec21b99149",
+    productionPolicy: "license-hold",
   },
   {
     id: "codebase-memory",
@@ -53,6 +59,9 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
     dataBoundary: "Read/index approved repositories only; writes require normal Stone/GitHub authorization.",
     purpose: "Persistent engineering graph, cross-repository impact analysis and architectural memory.",
     defaultEnabled: false,
+    pinnedRef: "v0.11.0",
+    pinnedCommit: "8972ea69c6ad94b1ef1d4ffbf0a92d78d2db1798",
+    productionPolicy: "approved-optional",
   },
   {
     id: "mvt",
@@ -65,6 +74,9 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
     dataBoundary: "Consent-gated forensic acquisitions only; evidence remains case-scoped.",
     purpose: "iOS/Android forensic analysis and IOC-based defensive investigation.",
     defaultEnabled: false,
+    pinnedRef: "v2026.9.21",
+    pinnedCommit: "e0697a58e977dc7035efe37363ea784ed8c6bc88",
+    productionPolicy: "consent-gated-sandbox",
   },
   {
     id: "financial-services",
@@ -77,6 +89,9 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
     dataBoundary: "Analysis/staging only; no autonomous money movement, ledger posting, onboarding approval or investment decision.",
     purpose: "Reusable financial analysis, reconciliation, close, KYC research and valuation workflows.",
     defaultEnabled: false,
+    pinnedRef: "574ed3624aebd0418c7e96cd101262f30210ab26",
+    pinnedCommit: "574ed3624aebd0418c7e96cd101262f30210ab26",
+    productionPolicy: "approved-analysis-only",
   },
   {
     id: "impeccable",
@@ -89,6 +104,9 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
     dataBoundary: "Design-quality checks and agent guidance only; no runtime authority.",
     purpose: "Deterministic UI/design quality gates plus agent design workflows.",
     defaultEnabled: false,
+    pinnedRef: "skill-v4.3.1",
+    pinnedCommit: "cd12f8660e2dde57b9615c8a6b8ea674101f9cfc",
+    productionPolicy: "ci-approved-with-checksum",
   },
   {
     id: "agent-substrate",
@@ -102,6 +120,9 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
     dataBoundary: "Sandboxed execution backend only; Stone owns identity, authorization, budgets, policy and receipts.",
     purpose: "Suspend/resume stateful agent workloads behind the Stone execution-provider interface.",
     defaultEnabled: false,
+    pinnedRef: "v0.1.0",
+    pinnedCommit: "fa6d949685a6318940a9a0195c867c864009b820",
+    productionPolicy: "experimental-shadow-only",
   },
 ] as const;
 
