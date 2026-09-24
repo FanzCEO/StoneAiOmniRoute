@@ -105,16 +105,31 @@ export const STONE_TECHNOLOGY_FABRIC: readonly StoneTechnology[] = [
   },
 ] as const;
 
+/** Resolve a conventional boolean environment flag without granting implicit truthiness. */
 export function envFlag(name: string, fallback = false): boolean {
   const raw = process.env[name];
-  if (raw == null || raw === "") return fallback;
-  return /^(1|true|yes|on)$/i.test(raw);
+  if (raw == null || raw.trim() === "") return fallback;
+  return /^(1|true|yes|on)$/i.test(raw.trim());
 }
 
+/** Return true only when the configured endpoint is a usable HTTP(S) URL. */
+export function validEndpoint(value: string | undefined): boolean {
+  const candidate = value?.trim();
+  if (!candidate) return false;
+
+  try {
+    const url = new URL(candidate);
+    return (url.protocol === "http:" || url.protocol === "https:") && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve the deploy-time enablement and configuration readiness of every Stone technology. */
 export function getStoneTechnologyState() {
   return STONE_TECHNOLOGY_FABRIC.map((technology) => ({
     ...technology,
     enabled: envFlag(technology.enabledEnv, technology.defaultEnabled),
-    configured: technology.endpointEnv ? Boolean(process.env[technology.endpointEnv]) : true,
+    configured: technology.endpointEnv ? validEndpoint(process.env[technology.endpointEnv]) : true,
   }));
 }
