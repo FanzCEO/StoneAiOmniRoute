@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { evaluateScannerOutput, type OmniSightScannerFormat } from "@/lib/security/omniSightIngest";
 import { persistOmniSightScan, listOmniSightScans } from "@/lib/db/omniSightSecurity";
+import { listActiveSecurityExceptions } from "@/lib/db/omniSightExceptions";
 import type { StoneSecurityPolicy } from "@/lib/security/omniSightCode";
 
 const FORMATS = new Set<OmniSightScannerFormat>(["sarif", "gitleaks", "osv", "stone"]);
@@ -30,7 +31,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "payload is required" }, { status: 400 });
   }
 
-  const policy: StoneSecurityPolicy = body.policy && typeof body.policy === "object" ? body.policy : {};
+  const requestedPolicy: StoneSecurityPolicy = body.policy && typeof body.policy === "object" ? body.policy : {};
+  const exceptionIds = listActiveSecurityExceptions().flatMap((row:any) =>
+    [row.finding_id, row.fingerprint].filter((value): value is string => typeof value === "string" && value.length > 0)
+  );
+  const policy: StoneSecurityPolicy = {
+    ...requestedPolicy,
+    allowFindingIds: [...new Set([...(requestedPolicy.allowFindingIds ?? []), ...exceptionIds])],
+  };
   const { findings, gate } = evaluateScannerOutput(format, body.payload, policy, body.source);
   const scan = persistOmniSightScan({
     source: typeof body.source === "string" ? body.source : format,
