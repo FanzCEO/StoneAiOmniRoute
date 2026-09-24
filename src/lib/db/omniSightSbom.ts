@@ -37,16 +37,23 @@ export function getComponentBlastRadius(query:string,limit=100){
   const results=components.map((component)=>{
     const workloads=db.prepare(`SELECT DISTINCT w.*
       FROM omnisight_runtime_workloads w
-      WHERE (component.image_digest IS NOT NULL AND component.image_digest = w.image_digest)
-         OR (component.artifact_ref IS NOT NULL AND component.artifact_ref = w.artifact_ref)
-      ORDER BY w.last_seen_at DESC`).all({component}) as any[];
+      WHERE (? IS NOT NULL AND ? = w.image_digest)
+         OR (? IS NOT NULL AND ? = w.artifact_ref)
+      ORDER BY w.last_seen_at DESC`).all(
+        component.image_digest, component.image_digest,
+        component.artifact_ref, component.artifact_ref
+      ) as any[];
 
     const scans=db.prepare(`SELECT DISTINCT s.*
       FROM omnisight_security_scans s
-      WHERE (component.scan_id IS NOT NULL AND component.scan_id = s.id)
-         OR (component.image_digest IS NOT NULL AND component.image_digest = s.image_digest)
-         OR (component.artifact_ref IS NOT NULL AND component.artifact_ref = s.artifact_ref)
-      ORDER BY s.created_at DESC`).all({component}) as any[];
+      WHERE (? IS NOT NULL AND ? = s.id)
+         OR (? IS NOT NULL AND ? = s.image_digest)
+         OR (? IS NOT NULL AND ? = s.artifact_ref)
+      ORDER BY s.created_at DESC`).all(
+        component.scan_id, component.scan_id,
+        component.image_digest, component.image_digest,
+        component.artifact_ref, component.artifact_ref
+      ) as any[];
 
     const findings=scans.flatMap((scan:any)=>
       db.prepare(`SELECT * FROM omnisight_security_findings
