@@ -27,7 +27,7 @@ env:
 jobs:
   changes:
     name: Change Classification
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     outputs:
       code: ${{ steps.classify.outputs.code }}
       docs: ${{ steps.classify.outputs.docs }}
@@ -77,7 +77,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     # P3 (plano mestre): a release-PR viva fica DRAFT o ciclo inteiro — jobs pesados pulam
     # drafts (ciclo v3.8.44: 123 runs pesados re-disparados por merges na release, 88 cancelados).
@@ -178,7 +178,7 @@ jobs:
 
   quality-gate:
     name: Quality Ratchet
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     # needs lint so eslint-results artifact is available (same inventory as the
     # blocking lint step). Allow lint failure so other ratchets still run.
     needs: [changes, test-coverage, lint]
@@ -299,7 +299,7 @@ jobs:
   # SonarQube needs SONAR_TOKEN/SONAR_HOST_URL secrets.
   quality-extended:
     name: Quality Gates (Extended)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     # P3 (plano mestre): a release-PR viva fica DRAFT o ciclo inteiro — jobs pesados pulam
     # drafts (ciclo v3.8.44: 123 runs pesados re-disparados por merges na release, 88 cancelados).
@@ -443,7 +443,7 @@ jobs:
 
   docs-sync-strict:
     name: Docs Sync (Strict)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     # P3 (plano mestre): a release-PR viva fica DRAFT o ciclo inteiro — jobs pesados pulam
     # drafts (ciclo v3.8.44: 123 runs pesados re-disparados por merges na release, 88 cancelados).
@@ -476,7 +476,7 @@ jobs:
 
   docs-lint:
     name: Docs Lint (prose — advisory)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     # P3 (plano mestre): a release-PR viva fica DRAFT o ciclo inteiro — jobs pesados pulam
     # drafts (ciclo v3.8.44: 123 runs pesados re-disparados por merges na release, 88 cancelados).
@@ -507,7 +507,7 @@ jobs:
 
   i18n-ui-coverage:
     name: i18n UI Coverage
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     # P3 (plano mestre): a release-PR viva fica DRAFT o ciclo inteiro — jobs pesados pulam
     # drafts (ciclo v3.8.44: 123 runs pesados re-disparados por merges na release, 88 cancelados).
@@ -547,7 +547,7 @@ jobs:
   # terminology cannot silently regress on the next machine-translation run.
   i18n-glossary-zhcn:
     name: i18n Glossary (zh-CN, ko)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && (needs.changes.outputs.i18n == 'true' || needs.changes.outputs.code == 'true')) }}
     steps:
@@ -569,7 +569,7 @@ jobs:
   # idioma (a matrix antiga subia 40 artifacts cujo result.txt colidia no merge-multiple).
   i18n:
     name: i18n Validation (all languages)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     needs: changes
     # P3 (plano mestre): a release-PR viva fica DRAFT o ciclo inteiro — jobs pesados pulam
     # drafts (ciclo v3.8.44: 123 runs pesados re-disparados por merges na release, 88 cancelados).
@@ -967,7 +967,7 @@ jobs:
     # actions/setup-node took 20m06s on .113 with 4 concurrent runners versus 16s hosted (npm
     # cache restore saturating the link), while the tests themselves tied, 2m54 vs 2m31. So
     # self-hosted is strictly worse here and there is nothing to configure.
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
     # needs: changes (not build) — no artifact consumed; see test-unit note.
     needs: changes
@@ -1335,7 +1335,7 @@ jobs:
 
   test-integration:
     name: Integration Tests (${{ matrix.shard }}/2)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
     # needs: changes (not build) — no artifact consumed; see test-unit note.
     needs: changes
@@ -1367,7 +1367,7 @@ jobs:
 
   test-security:
     name: Security Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ (vars.USE_SOVEREIGN_CI == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-light"]') || 'ubuntu-latest' }}
     # needs: changes (not build) — no artifact consumed; see test-unit note.
     needs: changes
     if: ${{ github.event_name != 'pull_request' || (needs.changes.outputs.code == 'true' && github.event.pull_request.draft == false) }}
