@@ -91,3 +91,19 @@ a time, only when idle**, with the idle check and the restart in the same comman
   `$RUNNER_TEMP` (on disk, per runner) — the 1.3 GB `next-build` artefact took 27–32
   minutes to land on the tmpfs and 2 minutes to upload from disk.
 - The `.15` VPS is homologation-only — never runs CI runners.
+
+
+## Sovereign CI failover
+
+Two independent repository variables govern runner selection:
+
+- `USE_VPS_RUNNER=true`: routes memory-heavy build jobs to `[self-hosted, omni-build]`.
+- `USE_SOVEREIGN_CI=true`: routes selected lightweight validation gates to `[self-hosted, omni-light]`.
+
+The controls are intentionally separate. A hosted-runner incident must not require routing every CI job to
+the memory-constrained build pool. Fork pull requests never receive a self-hosted runner through either
+switch; they fall back to GitHub-hosted runners.
+
+Before enabling sovereign failover, verify the runner box is online, the expected labels are registered,
+and concurrency/memory guards are healthy. Disable `USE_SOVEREIGN_CI` to return lightweight gates to
+GitHub-hosted runners. Do not treat the existence of this switch as evidence that the runner is online.
