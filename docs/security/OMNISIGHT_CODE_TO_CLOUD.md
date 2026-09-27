@@ -52,3 +52,22 @@ Native adapters should remain small and replaceable. Planned/allowed inputs incl
 
 Scanner output is evidence. OmniSight normalizes it. OmniTrust evaluates policy. Human authorization
 remains authoritative where Stone governance requires it. Intelligence does not create authority.
+
+
+## Current implementation map
+
+The native implementation currently uses migrations 176-179 to avoid collisions with upstream OmniRoute
+schema slots:
+
+- 176: security scans and normalized findings
+- 177: runtime workload inventory
+- 178: CycloneDX SBOM components
+- 179: governed, expiring security exceptions
+
+Authenticated management APIs expose scan ingestion/history, finding detail, SBOM inventory and search,
+runtime workload inventory, workload-to-evidence correlation, security posture, package blast radius,
+and exception creation/listing.
+
+The dashboard entry point is `/dashboard/security/omnisight`. CI adapters currently normalize Semgrep,
+Gitleaks, OSV, and Trivy evidence through the Stone-owned gate. Release status must remain unvalidated
+until the repository's CI runners actually execute against the branch head.
