@@ -1,0 +1,127 @@
+name: Sovereign OmniSight Validation
+
+on:
+  push:
+    branches: ["release/**"]
+    paths:
+      - "src/lib/security/omniSight*.ts"
+      - "src/lib/routing/sovereignRouting.ts"
+      - "src/lib/routing/adaptiveRouting.ts"
+      - "src/lib/db/omniSight*.ts"
+      - "src/lib/db/migrations/17[6-9]_omnisight_*.sql"
+      - "src/app/api/security/omnisight/**"
+      - "src/app/(dashboard)/dashboard/security/omnisight/**"
+      - "tests/unit/security/omnisight-*.test.ts"
+      - "tests/unit/sovereign-routing.test.ts"
+      - "scripts/security/omnisight-gate.mjs"
+      - ".github/workflows/sovereign-omnisight-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sovereign-omnisight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate OmniSight on sovereign runner
+    runs-on: [self-hosted, omni-light]
+    timeout-minutes: 30
+    env:
+      OMNIROUTE_SKIP_SYSTEM_TRUST: "1"
+      DISABLE_SQLITE_AUTO_BACKUP: "true"
+      JWT_SECRET: sovereign-ci-secret-with-sufficient-length-for-validation
+      API_KEY_SECRET: sovereign-ci-api-key-secret-long
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Record validation target
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)"
+          echo "ref=$GITHUB_REF_NAME"
+          git status --short
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - uses: ./.github/actions/npm-ci-retry
+
+      - name: Verify OmniSight migration slots are unique
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const dir="src/lib/db/migrations";
+          const files=fs.readdirSync(dir).filter((f)=>/^\d+_.*\.sql$/.test(f));
+          const by=new Map();
+          for(const file of files){
+            const n=file.match(/^(\d+)_/)[1];
+            const list=by.get(n) ?? [];
+            list.push(file);
+            by.set(n,list);
+          }
+          const collisions=[...by.entries()].filter(([,list])=>list.length>1);
+          if(collisions.length){
+            console.error("Migration collisions:", collisions);
+            process.exit(1);
+          }
+          for(const n of ["176","177","178","179"]){
+            const matches=files.filter((f)=>f.startsWith(n+"_omnisight_"));
+            if(matches.length!==1){
+              console.error(`Expected exactly one OmniSight migration at ${n}, found`,matches);
+              process.exit(1);
+            }
+          }
+          console.log("OmniSight migration slots 176-179 unique");
+          NODE
+
+      - name: Typecheck governed core
+        run: npm run typecheck:core
+
+      - name: Run focused OmniSight and sovereign-routing tests
+        run: |
+          npx vitest run --config vitest.config.ts \
+            tests/unit/security/omnisight-code-security.test.ts \
+            tests/unit/security/omnisight-ingest.test.ts \
+            tests/unit/security/omnisight-exceptions.test.ts \
+            tests/unit/sovereign-routing.test.ts
+
+      - name: Validate native gate runner parses
+        run: node --check scripts/security/omnisight-gate.mjs
+
+      - name: Emit validation receipt
+        if: always()
+        run: |
+          mkdir -p .artifacts
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const receipt={
+            schema:"stone.validation-receipt/v1",
+            system:"OmniSight",
+            sha:process.env.GITHUB_SHA,
+            ref:process.env.GITHUB_REF_NAME,
+            runId:process.env.GITHUB_RUN_ID,
+            runner:process.env.RUNNER_NAME,
+            runnerOs:process.env.RUNNER_OS,
+            timestamp:new Date().toISOString()
+          };
+          fs.writeFileSync(".artifacts/omnisight-sovereign-validation.json",JSON.stringify(receipt,null,2)+"\n");
+          NODE
+
+      - name: Upload validation receipt
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: omnisight-sovereign-validation
+          path: .artifacts/omnisight-sovereign-validation.json
+          if-no-files-found: error
+          retention-days: 14
