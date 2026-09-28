@@ -1,0 +1,12 @@
+[Unit]
+Description=Poll StoneAiOmniRoute release branch for sovereign validation
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30
+Persistent=true
+Unit=stone-sovereign-ci.service
+
+[Install]
+WantedBy=timers.target
