@@ -25,7 +25,7 @@ jobs:
   # path filters share existence reasons: code / docs / i18n / workflow.
   changes:
     name: Change Classification
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     outputs:
       code: ${{ steps.classify.outputs.code }}
       docs: ${{ steps.classify.outputs.docs }}
@@ -99,7 +99,7 @@ jobs:
     # not is memory PROVISIONING: a 10 GB swapfile plus a 12 GB V8 heap. That matters because
     # --max-old-space-size only bounds V8's JS heap, never Turbopack's native (Rust) allocation
     # (#6409) — swap is what absorbs the native peak. Both are mirrored below.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     # #7307: advisory for the first week of release-PR runs; remove
     # continue-on-error after the production-build signal is stable.
     continue-on-error: true
@@ -140,7 +140,7 @@ jobs:
     name: Docs Gates (fast-path)
     needs: changes
     if: ${{ github.event_name != 'pull_request' || ((github.event.pull_request.draft == false || startsWith(github.head_ref, 'mergify/merge-queue/')) && (needs.changes.outputs.docs == 'true' || needs.changes.outputs.code == 'true')) }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -177,7 +177,7 @@ jobs:
     #
     # With this pinned, USE_VPS_RUNNER governs ONLY build-like jobs — one variable, one coherent
     # purpose. That is what gap 19 asked for; a second variable turned out to be unnecessary.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     # tsx gates (known-symbols, route-guard-membership) import modules that open
     # SQLite on load; provide DB env so a fresh CI DB initializes cleanly.
     env:
@@ -437,7 +437,7 @@ jobs:
     # actions/setup-node took 20m06s on .113 with 4 concurrent runners versus 16s hosted (npm
     # cache restore saturating the link), while the tests themselves tied, 2m54 vs 2m31. So
     # self-hosted is strictly worse here and there is nothing to configure.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     env:
       JWT_SECRET: ci-lint-secret-with-sufficient-length-for-validation
       API_KEY_SECRET: ci-lint-api-key-secret-long
@@ -479,7 +479,7 @@ jobs:
     # actions/setup-node took 20m06s on .113 with 4 concurrent runners versus 16s hosted (npm
     # cache restore saturating the link), while the tests themselves tied, 2m54 vs 2m31. So
     # self-hosted is strictly worse here and there is nothing to configure.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     # A shard finishes in ~10 min. Without a ceiling a hung test process holds the PR for
     # GitHub's 6 h default: on 2026-08-28 shard 1/4 sat 64 min without a line of output
     # (twice, same spot — a timing race, gone on the third run) while the other three
@@ -602,7 +602,7 @@ jobs:
     name: Merge integrity (changelog + generated skills)
     # Always on non-draft PRs — CHANGELOG/skills can break on docs-only merges too.
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false || startsWith(github.head_ref, 'mergify/merge-queue/')) }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, own-ci]
     continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true }}
     env:
       JWT_SECRET: ci-lint-secret-with-sufficient-length-for-validation
