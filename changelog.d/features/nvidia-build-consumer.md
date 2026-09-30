@@ -1,0 +1,1 @@
+- **feat(routing):** add an opt-in governed NVIDIA Build consumer with dynamic model discovery, free-first transient fallback, authority gating, and provenance receipts.
